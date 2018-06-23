@@ -1,0 +1,62 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+
+\usepackage{geometry}
+ \geometry{
+ a4paper,
+ total={170mm,257mm},
+ left=20mm,
+ top=20mm,
+ }
+
+\usepackage{amsmath}
+\DeclareMathOperator{\improving}{IMPROVING-NEIGHBOR}
+ 
+\title{IOFDS Zusammenfassung}
+\author{Luchello Di Liello \thanks{Thanks to Rick and Morty}}
+\date{June 2018}
+ 
+\begin{document}
+ 
+\begin{titlepage}
+\maketitle
+\end{titlepage}
+ 
+\section{Optimization: Basics}
+
+\subsection{Greedy and Local Search}
+
+Most of everyday's life problem are related to solving optimization problems, that is, to find a value $X$ that maximizes/minimizes a function $f(X)$, for example find a solution to the TSP problem. If $X$ is defined by a discrete set of possibilities, one speaks about discrete optimization. On the contrary, continuous optimization considers real-valued inputs. First, most real-world problem have to do with choices among a discrete set of alternatives, and solutions are often obtained with small steps.
+
+\subsubsection{TSP}
+The Traveling Salesman Problem is a simple but very hard to be solved problem. The problem can be shown to be NP-complete, so an exact solution is pretty impossible to be found in reasonable time for large instances. The number of possibile path is $(n-1)!$, so problem with more than 20-30 cities or nodes are not tractable. Luckily, good, but probably not optimal, solutions can be found with heuristic and optimization algorithms in reasonable time.
+
+\subsubsection{Greedy}
+\textit{``Better an egg today than a hen tomorrow''}\\
+Greedy algorithms choose always the move that looks better at the moment. The base algorithm does not learn from the history and this shortsighted approach may prevent finding the best solution. There is no mechanism to undo moves, so every choice is definitive. Greedy can lead to very low quality solutions, but there are exceptions where a greedy approach is proved to lead to the best result, like with the MST problem.
+A general way to prove optimality of greedy algorithms is as follows:
+\begin{itemize}
+\item{1. Formulate the problem in an inductive way}
+\item{2. Prove that exists a solution starting with a greedy choice}
+\item{3. Prove that $\text{optimal partial solution} + \text{greedy choice} \rightarrow \text{bigger partial optimal solution}$}
+\end{itemize}
+
+\subsubsection{Local Search and perturbations}
+Improve a suboptimal solution with small local changes. We call this moves $\mu_{0}, \mu_{1}, ...$ and a move is kept only if it improves the actual solution. We call $X^{(0)}, X^{(1)}, ... , X^{(t)}$ the configurations of the input variable $X$ at step $t$. We define a simple function $N(X^{(t)}) = \{\mu_{i}(X^{(t)}), i = 0, ... ,n\}$ that returns the set of possible $n$ next moves from the current point $X^{(t)}$. The basic Local Search algorithm works as follow:
+\begin{itemize}
+\item{1. $X' \leftarrow \improving(N(X^{(t)}))$}
+\item{2. $X^{(t+1)} = \begin{cases} 
+      Y & f(Y) < f(X^{(t)}) \\
+      X^{(t)} & \text{otherwise, and stop local search}.
+   \end{cases}
+$}
+\end{itemize}
+The solution is called local minimizer, and is the lowest value of the function in that valley. Local search has been discovered to be very effective on combinatory problems with a rich internal structure (like TSP). Local modifications of the tour are can be obtained removing some edges and reconnecting the nodes in a different manner, and the new $f(X)$ can be quickly computed with incremental evaluation.
+
+\subsubsection{LS and Big valleys}
+Local search is the initial building block of more complex schemes. We define an attraction basin as the portion of the input space that leads to the same local minima. The big valley property is a nice assumption that allow algorithms to perform better: it says that good local minima are often in good company, so their attraction basins are very close or neighbouring. This means that when local search stops in a local minima, it's often better try to escape from the current attraction basin and fall in a close one than restarting from a random point.
+
+
+
+ 
+\end{document}
