@@ -57,6 +57,59 @@ The solution is called local minimizer, and is the lowest value of the function 
 Local search is the initial building block of more complex schemes. We define an attraction basin as the portion of the input space that leads to the same local minima. The big valley property is a nice assumption that allow algorithms to perform better: it says that good local minima are often in good company, so their attraction basins are very close or neighbouring. This means that when local search stops in a local minima, it's often better try to escape from the current attraction basin and fall in a close one than restarting from a random point.
 
 
+\subsection{Derivative Based Optimization}
 
- 
+Derivative based optimization techniques help solving problems on continuous variables. We will focus on two major related problems:
+\begin{itemize}
+\item{Solving a set of non-linear equations \\
+	\begin{itemize}
+	\item{ $ \text{Given } F : {\rm I\!R}^n \rightarrow {\rm I\!R}^n $ }
+	\item{ $ \text{Find } x^\ast \in {\rm I\!R}^n \text{ such that } F(x^\ast) = 0 \longrightarrow \text{ if } x^\ast \text{ exists it minimizes } \sum_{i=1}^{n} f_i(x)^2 = 0 $ }
+	\end{itemize}
+}\bigskip
+\item{
+	Unconstrained minimization \\
+	\begin{itemize}
+	\item{ $ f : {\rm I\!R}^n \rightarrow {\rm I\!R}^n $ }
+	\item{ $ \text{Find } x^\ast \in {\rm I\!R}^n \text{ such that } f(x^\ast) \leq f(x) \ \forall x \in {\rm I\!R}^n \longrightarrow x^\ast \text{ if global minima } $ }
+	\end{itemize}
+}
+\end{itemize}
+This chapter will collect some techniques to optimize smooth (derivable) functions on continuous variables. A function is derivable in a if exists the limit $$
+f'(a) = \lim_{h\to0} \frac{f(a+h) - f(a)}{h} $$ If $x$ is very close to the point of interest $a$ ($h = x-a$), we can approximate the function in $x$ with $$ f(a+h) \approx f(a) + f'(a)*h $$ Like skis are tools for descending slopes, derivatives are useful tools to build local model and to minimize the objective function iteratively.
+
+\subsubsection{Optimization and machine learning}
+
+There is a deep relation between Optimization and ML because each one is used by the other to improve performances. ``Optimization for Learning'' is the art of choosing best model and variables configurations to let our machine learning system perform better. An example is to choose the best combination of weights in a NN. On the other side ``Learning for Optimization'' is the science of using learning techniques to improve the search of global minima that depends on the past steps done by the algorithm. This allows to build algorithms that have a memory of what they already did, for example to avoid visiting a non-interesting attraction basin more than once.
+
+\subsubsection{Derivative based techniques in one dimension}
+We start with a historical and fundamental method to find the point where the function is equal to 0, starting from a sufficiently close point and repeating the following steps:
+\begin{itemize}
+\item{Find a solvable local model}
+\item{Solve the local model}
+\end{itemize}
+The local model can be found with:
+\begin{itemize}
+\item{the Taylor series approximation: $ f(x) = f(x_{c}) + f'(x_{c}) (x - x_{c}) + \frac{f''(x_{c}) (x-x_{c})^2}{2!} + ...$ }
+\item{or the Newton's theorem: $ f(x) = f(x_{c}) + \int_{x_{c}}^{x} f'(z) dz \approx f(x_{c}) + f'(x_{c}) (x - x_{c}) $ }
+\end{itemize}
+The local model is therefore $$ M_{c}(x) = f(x_{c}) + f'(x_{c}) (x - x_{c}) $$ and so the next value $x_{+}$ will be $$ x_{+} = x_{c} - \frac{f(x_{c})}{f'(x_{c})} $$ 
+If the function is linear, convergence occurs in one step, on the other case, it is possible to prove that if one starts close enough the the local minima, it will reach it in a fast (quadratic) manner.
+\par
+A global and safe algorithm to find roots of a function is the bisection method: if the function is continuous and we know at least two point $l_{0}$ and $r_{0}$ such that $f(l_{0}) < 0$ and $f(r_{0}) > 0$, the bisection method converges in a logarithmic number of steps. The cons is that it works only in one dimension.
+\par
+An other idea is to use backtracking: if Newton steps leads too far, one reverts the direction returning closer to the root. Finally, what usually expert do is to combine some powerful local convergence method (like Newton's) with others that are global and robust.
+\par
+Derivatives are not always available but can be approximated with secants. One can use the value of the previous iteration $f(x_{-})$ to find an approximation of the inclination: $$ a_{c} = \frac{f(x_{c}) - f(x_{-})}{x_{c} - x_{-}} $$ Given the less accuracy, convergence will be slower. 
+
+\subsubsection{Solving models in more than one dimension}
+Newton's method requires the gradient to be equal to zero. Given step $s$, the quadratic model is: $$Q(s) = \sum_{i=1}^{n} g_{i} s_{i} + \sum_{i=1}^{n} \sum_{j=1}^{n} H_{ij} s_{i} s_{j} \equiv g^{T} s + \frac{1}{2} s^{T} H s$$ The quadratic model is an reduction of the Taylor series to the second order, trying to approximate the objective function with a parabola in $n$ dimensions. Like many other times, we are searching a point where the gradient equals 0: $$ \nabla Q(s) = 0 = g +Hs $$ $$ Hs^{n} = -g \text{ (Newton equation)} $$ Because of the limited precision of real number on computers, one has to deal with numerical stability, so the computed value can be slightly different from the real solution. Ill-Conditioning is a term used to measure how much a function is sensitive to some errors in the data. There are cases in which very small oscillations in the input values lead to big changes in the output value of f, and has to be avoided.
+
+
+
+
+
+
+
+
 \end{document}
