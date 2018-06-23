@@ -9,18 +9,18 @@
  top=20mm,
  }
 
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
 \usepackage{amsmath}
 \DeclareMathOperator{\improving}{IMPROVING-NEIGHBOR}
+\DeclareMathOperator{\neighbor}{NEIGHBOR}
  
 \title{IOFDS Zusammenfassung}
-\author{Luchello Di Liello \thanks{Thanks to Rick and Morty}}
+\author{Luchello Di Liello & Marty \thanks{Thanks to Rick and Morty}}
 \date{June 2018}
  
 \begin{document}
- 
-\begin{titlepage}
-\maketitle
-\end{titlepage}
  
 \section{Optimization: Basics}
 
@@ -56,7 +56,171 @@ The solution is called local minimizer, and is the lowest value of the function 
 \subsubsection{LS and Big valleys}
 Local search is the initial building block of more complex schemes. We define an attraction basin as the portion of the input space that leads to the same local minima. The big valley property is a nice assumption that allow algorithms to perform better: it says that good local minima are often in good company, so their attraction basins are very close or neighbouring. This means that when local search stops in a local minima, it's often better try to escape from the current attraction basin and fall in a close one than restarting from a random point.
 
+\subsection{Stochastic global optimization}
+In this chapter techinques to find global opt for functions in real variables are covered. Brute force techniques (enumeration of all possible solutions) are impossible. 
+A robust brute force techinque can be throwing random points on the input space.
 
+SGO is a set of methods which includes global random search and methods based on probabilistic assumption on the obj function. 
+
+There is a problem: when num of variable increases, there is exponential increase in computational complexity, due to the fact that neighbours are exponentially further from each other.
+ 
+Many algorithm exist, like simulated annealing.
+
+\subsection{stochastic global opt basics}
+The optimization problem is:
+
+given $ f : A \rightarrow R $ \\
+find $ x\* \in A $ \\
+such that $ f(x\*) \leq f(x) $ for every $ x \in A $ \\
+
+$ x\ast $ is the global optimum.
+
+It could be necessary to combine robust global schemes with fast local search schemes.
+
+Multistart local search: many runs of local search are run from a set of interesting points, so global scheme has to find an area of search, where a minimizer x* is found by local opt techinque.
+
+Strong assumption are needed to ensure convergence for sparse sequences of points. 
+
+\subsection{Lipschitz continuity}
+Function f does not havet to change too fast, so it has a limited variability, or Lipschitz continuity. 
+
+A function is L continuous if its change in value is bounded by the corresponding change in the evaluation point, multiplied by a constant factor $ K \geq 0 $.
+$$
+\mid f(x1)-f(x2) \mid < K \parallel x1 - x2 \parallel
+$$ 
+
+\subsection{Pure random search}
+It is based only on repetitions of generated random points which have to be evaluated. They are generated usually with uniform distribution. 
+
+Often used as component of more complex global optimization schemes. 
+
+Convergence can be proved (soon or late, I reach the optimum using uniform dist), but rate of convergence is more interesting. Uniform probab distribution does not learn from previous history of search, so to speed up convergence we can combine a probab density Q with uniform prob distribution P, so that the convergence theorem still holds.
+
+\subsubsection{Rate of convergence in PRS}
+Different samples $ x_{j} $ are independent and identically distributed (i.i.d) with distribution p(x), and f has to hit the “target” set 
+$$ 
+B \big(x\ast , \epsilon \big) = \{ x \in A : \parallel x - x\ast \parallel \le \epsilon \}
+$$
+
+with point $ x_{j} $.
+
+It can be a success or a failure, so it can be model with indipendent bernoully trials.
+
+probab of failure is:
+$$
+Pr \{ x_j \notin B \} = 1-p(B)
+$$
+
+sample points are indipendent so I can multiply probab:
+
+$$
+(1-p(B))^n
+$$
+
+So average num of iterations required for a first hit of a ball B is:
+$$
+E(\text{first hitting time}) = 1 / p(B)
+$$
+
+Finally $ p(B) $ can be computed as the ratio between the vol of the ball B and the vol of the feasible reagion A:
+
+$$ 
+\frac{vol(A)}{vol(B)} = \frac{\pi^{d/2}*\epsilon^d}{\Gamma(d/2+1)*vol(A)}
+$$
+
+So now we can see that $ N\ast $ is:
+
+$$
+N\ast \approx -ln{\gamma} * \frac{\Gamma(d/2+1)}{\pi^{d/2}*\epsilon^{d}}*vol(A)
+$$
+
+Number of iteration strongly depends on the dimension \textit{d} of the search space. If \textit{d} increases, the number of iteration of PRS increase exponentially. 
+
+The only thing we can hope is to deal with functions with regularities which can be learnt from an initial sampling, to identify shortcuts and get closer to the opt solution. 
+
+Convergence does not mean anything in practice.
+
+\subsection{Statistical inference in global random search}
+
+The objective is to answer: what is the probability to get a new record value in the next n
+iterations?  In some cases one needs a large number of sample points in the vicinity of the global optimizer in order to derive estimates.
+
+Two application of stat inference are branch and bound and random multistart.
+
+Branch and probab bound generalize branch and bound to continuous varibles.
+
+Steps: 
+\begin{itemize}
+\item split set of admissible values in a tree-style :)
+\item decide the potential value of individual subsets for other searches
+\item select the most interesting subsets fo additional splits
+\end{itemize}
+	
+Hyper-rectangles used for splitting space. Can be used for low-dim problems.
+
+Random multistart repeats local search from random init points, until each search find a local min. We can use stat inf to estimate number of trials initial points to generate to guarantee that all loc min have been found. 
+
+\subsection{Markov process and simulated annealing}
+
+Local search can be modified in stochastic way. There are many ideas to do such a thing and they can be applied in continuous and discrete problems. 
+
+Local search stops at a locally optimal point, searching in the vicinity of good local minima may lead to the
+discovery of better solutions. I can accept worsening moves, hoping to reach in future better local min. The danger is to fall back again to the local min, because the next iteration cannot escape from the local basin. 
+
+To avoid deterministic cycles I can use Simulated Annealing. I allow worsening moves but I still visit low \textit{f} values more often. I "shake" the function to visit worse point and then I try to find states with lower values than the initial one.
+
+\subsection{Symulated annealing and asymptotics}
+In PRS probab distribution for generating sample can depend on previously extracted points. A simplification is  to have the distribution just depend on the latest generated point and \textit{f} value. So, the sequence of sample points become a Markov chain, which has no memory on the history of previous search. This is not efficient.
+SA is based on Markov but trajectory is built in ranomized manner: successor of current point is chosen stochastically, wiht probab depending only on the current point.
+
+\begin{itemize}
+\item{1. $x' \leftarrow \neighbor(N(X_j))$}
+\item{2. $x_{(j+1)} = \begin{cases} 
+      x' & \text{ if } f(x') \leq f(x_j) \\
+      x' & \text{ if } f(x') > f(x_j) \text{ with probability } p = \exp{-\frac{f(x)-f(x_j)}{T}} \\
+      x_j & \text{otherwise}
+   \end{cases}
+$}
+\end{itemize}
+
+SA introduces a temperature parameter T which determines the probability that worsening moves are accepted:
+a larger T implies that more worsening moves tend to be accepted, and therefore a larger diversification occurs. The rule in the equation is called exponential acceptance rule.
+
+If T is big (heating) , I obtain a random walk. If T is lowerd, I accept only improving moved (cooling).
+
+\subsection{asymptotic convergence results}
+
+Many bad formulas to show that hen the number of iterations goes to infinity and the temperature is decreased slowly, the probability of
+observing a global optimum goes to one but I have to wait toooooo loooong.
+
+(in future there will be some tricks to use SA in online manner, learning the parameter T during search and adapting it in smart ways :) )
+
+Actually, repeated local search, and even pure random search have better asymptotic results
+for some problems.
+
+\subsection{inertial shaker algorithm}
+The simpler Inertial Shaker (IS) technique, can be a practical choice to go beyond PRS while allowing on-the-job learning to rapidly adapt the probab of generating the next sample.
+
+\begin{itemize}
+\item probab is uniform over a search box defined around a current point x, where samples are generated. than, the search box is moved following the displacement applied to the point x
+\item trend direction is computed averaging previous displacements
+\item amplification and history depth are used to compute the displacement
+\end{itemize}
+
+Double shot strategy applied to all component of the vector of displacements. A displacement
+is applied at every component as long as it improves the result. If no improvement is possible, then the function returns false, and the search box is accordingly shrunk.
+
+\begin{figure}
+\includegraphics[scale=0.60]{is}
+\caption{inertial shaker alg}
+\centering
+\end{figure}
+
+\begin{figure}
+\includegraphics[scale=0.60]{ds}
+\caption{double shot alg}
+\centering
+\end{figure}
 
  
 \end{document}
