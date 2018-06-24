@@ -14,11 +14,12 @@
 
 \usepackage{float}
 
-\usepackage{amsmath}
+\usepackage{amsmath,amssymb}
 \DeclareMathOperator{\improving}{IMPROVING-NEIGHBOR}
 \DeclareMathOperator{\neighbor}{NEIGHBOR}
 \DeclareMathOperator*{\argmax}{arg\,max}
 \DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator{\E}{\mathbb{E}}
  
 \title{IOFDS Zusammenfassung}
 \author{Luchello Di Liello \& Marty \thanks{Thanks to Rick and Morty}}
@@ -363,7 +364,7 @@ An other method consists in combining hashing with persistent red-black trees. T
 \item{Share subtrees between different RB trees to be efficient}
 \end{itemize}
 
-\section{adapting neighborhoods and selection}
+\section{Adapting Neighbourhoods and Selection}
 Possible moves are collected into a set of different
 neighborhoods (NH). During local search I have to select a 
 NH and how to select one neighbor to be the next poin in the search trajectory.
@@ -413,6 +414,29 @@ Skewed VNS moves also in worsening zones if the lead to search trajectory suffic
 \centering
 \end{figure}
 
+\section{Iterated Local Search}
+We assume that an LS algorithm is available as a black-box. The first and simpler method consists in starting LS from a set of point uniformly distributed over the input space $X$. As usually, the problem with this method is that it does not learn while searching a local or global minima. The right way is to use history to produce better starting point, taking in account the assumption that local minima are usually clustered. Moreover, many problems allow to evaluate $f$ incrementally from close input values.
+Incremental local search works as follow:
+\begin{itemize}
+\item{Perturb current local minima}
+\item{Start local search from the modified solution}
+\end{itemize}
+As you may have noticed, it is similar to VNS. This simple but effective method is better than restarting always from a casual new point because from the law of large numbers, $f(X^{(t)})$ values tends to concentrate local minima around an average $\E[f(x^*)]$ after lot of trials. Starting from a new point close to the last local minima destroys the independency of the events, trying to skip the law of large numbers.
+
+A more robust technique works as follow:
+\begin{itemize}
+\item{Find some local minima (e.g. launching local search from some random point)}
+\item{Restart the search from this local minima in their neighbourhood}
+\end{itemize}
+This approach creates a hierarchy of nested local searches. Usually, the level of nesting is two (like in the example). An important question is: how do we find neighbour attraction basins? Create a perfect map of attraction basins is very difficult for obvious reasons. A simple method to reach a neighbour attraction basin consists in using perturbations: start with a weak perturbation and increase the power until a new attraction basin is found. To avoid cycles, use some randomness in the generation of perturbations. Strength history should be used to speed up the process of finding how strong the new perturbation should be.
+Picture \ref{fig:ils} shows how IteratedLocalSearch works.
+
+\begin{figure}[H]
+\includegraphics[scale=0.25]{ils}
+\caption{Iterated Local Search}
+\centering
+\label{fig:ils}
+\end{figure}
  
 \end{document}
 
