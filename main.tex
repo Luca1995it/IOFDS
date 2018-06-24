@@ -15,6 +15,8 @@
 \usepackage{amsmath}
 \DeclareMathOperator{\improving}{IMPROVING-NEIGHBOR}
 \DeclareMathOperator{\neighbor}{NEIGHBOR}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
  
 \title{IOFDS Zusammenfassung}
 \author{Luchello Di Liello \& Marty \thanks{Thanks to Rick and Morty}}
@@ -322,7 +324,46 @@ Minimizing the transformed function yields a necessary condition for optimality.
 
 
 
+\section{Reactive Search Optimization (RSO): Online Learning methods}
 
+The optimization function is considered as a black-box, but the more points are generated the more knowledge is accumulated in an implicit form. This data can be used to generate internal models and improve efficiency of our algorithms. RSO tends towards truly intelligent problem-solving machines, which learn and self-improve the more they work.
+RSO combines machine learning techniques with optimization heuristics. Reactive means ready response to events during the search, through an internal feedback loop for online self-tuning and dynamic adaptation. Lot of machine learning methods like reinforcement learning and NN are used, trying for example to model the probability density function the target function.
 
+\subsection{RSO: Learning while searching}
+The main objective is to tune parameters automatically, like the temperature in SA. The intent is to transfer part of the human intelligence to the machine allowing the algorithm to work independently. It is very important that the following objectives are reached:
+\begin{itemize}
+\item{Reproducibility of results: given a complete and unambiguous documentation, everyone should achieve the same performance}
+\item{Automation: tuning of the parameters should be automatic}
+\end{itemize}
+Given that real-worlds problem have a rich internal structure, this algorithm should learn on the job like the human brain, deriving future decision based on previous observations. Knowing why and when an algorithm is effective is a very valuable property. 
+
+\subsection{RSO based on prohibitions}
+The idea is to prohibit old solutions to be more creative and to reach unexplored new area. A we already mentioned, local search generates a trajectory $X^{(t)}$ of points in the admissible search space. The successor of a point $X^{(t)}$ is selected from a Neighborhood $N(X^{(t)})$. A point is locally optimal with respect to $N$ if $f(X^{(t)}) < f(Y) \ \forall \ Y \in N(X^{(t)})$. In this chapter we will consider a case in which $X$ is a binary string on length $L: X = \{0,1\}^L$ and the neighbourhood is obtained by applying elementary moves $\mu_{i}$ with $i = 1,...,L$ that change the \textit{i}-th bit of the string $X = [x_{1},...,x_{i},...,x_{L}]$. The algorithm work as follow: at each iteration $t$, we have:
+\begin{itemize}
+\item{The set of all possible moves $M^{(t)}$}
+\item{The set of prohibited moves $T^{(t)} \in M^{(t)}$}
+\item{The set of admissible moves $A^{(t)} \in M^{(t)}$}
+\end{itemize}
+The next point is given by:
+$$
+X^{(t+1)} = \mu^{(t)}(X^{(t)}) \text{ where } \mu^{(t)} = \argmin_{v \in A^{(t)}} f(v(X^{(t)}))
+$$
+Basically, the admissible move that leads to the best point is chosen. But how do we populate the set of prohibited moves $T^{(t)}$? It depends on the case. For example, to avoid cycles, one can prohibit a move for a period $\tau$ after having executed it. If $\tau$ time has passed from the last time move $\mu_{i}$ was executed, then it will be newly available. Prohibit moves for a finite amount of time will be fundamental in later phases to reach the global minima. In the string case, this means that after having flipped a bit we should wait at least $\tau$ steps to flip it again. $\tau$ should be learnied in a way that there will be the possibility to reach a new attraction basin in $\tau + 1$ steps. Prohibitions methods are effective on combinatorial optimization and sub-symbolic machine learning.
+
+\subsection{Fast data structures for using the search history}
+Access past events of the trajectory $X^{(0)}, X^{(1)}, ..., X^{(t)}$ is mainly done through hashing functions and radix-tree techniques. A first technique combines hashing with linked lists: each bucket of the hash-table points toward a linked list of all elements in that bucket. Each item can be retrieved in approximated constant time if the number of buckets if sufficiently large and the hash functions distributes value with a pretty uniform probability.
+
+An other method consists in combining hashing with persistent red-black trees. This data structure will not be ephemeral (previous version will not be destroyed when inserting / deleting data) but will be partially persistent. RB trees are used to do insert/delete of elements in $O(\log n)$ and can return all their content in $O(n)$. Each RB tree stores a copy of the system at step $t$ and all trees are reachable through a hash-table. If more configurations $X^{(t)}$ have the same hash, they are stored in a linked list. Each element of the list will point to a different RB. This method allows us to:
+\begin{itemize}
+\item{Store all the trajectory of our algorithm}
+\item{Retrieve each config in $O(1) \text{ (time for the hash) } + O(n) \text{ (time to a DFS of the tree) }$ }
+\item{Add a new configuration incrementally, trying to use previously computed subtrees}
+\item{Share subtrees between different RB trees to be efficient}
+\end{itemize}
+
+ 
 \end{document}
+
+
+
 
