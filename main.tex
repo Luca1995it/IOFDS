@@ -12,6 +12,8 @@
 \usepackage{graphicx}
 \graphicspath{ {./images/} }
 
+\usepackage{float}
+
 \usepackage{amsmath}
 \DeclareMathOperator{\improving}{IMPROVING-NEIGHBOR}
 \DeclareMathOperator{\neighbor}{NEIGHBOR}
@@ -360,6 +362,56 @@ An other method consists in combining hashing with persistent red-black trees. T
 \item{Add a new configuration incrementally, trying to use previously computed subtrees}
 \item{Share subtrees between different RB trees to be efficient}
 \end{itemize}
+
+\section{adapting neighborhoods and selection}
+Possible moves are collected into a set of different
+neighborhoods (NH). During local search I have to select a 
+NH and how to select one neighbor to be the next poin in the search trajectory.
+
+The first is the most problematic issue, but we can use online learning strategies to solve both of them.
+
+In first case I can decide NH a priori and selecting the neighbor is dynamic. The longer I evaluate the neighborhood, the better the chance of
+identifying a move with a large improvement, but the shorter the total number of moves which one can execute in a slot of CPU time.
+
+\subsection{VNS}
+Fixing the NH a priori is not a good choice, I have to adapt it to the local config around the current point. 
+
+I consider a set of NG, defined a priori and I want to use the most appropriate one during search. 
+
+So VNS has to:
+
+\begin{itemize}
+\item understand which NH use and how many
+\item how to schedule them (order?)
+\item how to select neighbor inside the NH (best one? the first one found?)
+\end{itemize}
+
+The first issue can be decided based on detailed problem knowledge and preliminary experimentation.
+
+The second issue can be solved in different manner. I can cycle randomly among the NH (no online training), or I can change NH when I reach a local min inside the current NH. 
+As soon as a local minimum is reached for a specific NH, improving moves can be found in other NH. Online training is used because I have to change NH using the minimal diversification I need.
+
+The third issue can be addressed in two ways: best improvement local search and first-move. The first method considers all neighbors (brute-force) and evaluate them, then I move to the one with the best value. The second one considers only a sample of possible moves, a subset of neighbors, so, finally I return the first candidate with better \textit{f} value. This method is adaptive because the exact number of neighbors evaluated before deciding the next move depends on the local properties in the config space around the current point.
+I evaluate a small number of candidates in the early phase of the search, and identifying
+an improving move will become more difficult during the later phases, close to local optimality.
+
+As soon as search is successful, back to default NH.
+
+VN Descent uses the defaul NH first and the other only if it fails (current point is local min for it). I can order NH according to the strength of perturbation.
+Reduced VNS generate a random neighbor before moving or not, so in the selection of neighbor alg I find this line:
+
+\begin{figure}[H]
+\includegraphics[scale=0.60]{random}
+\centering
+\end{figure}
+
+Skewed VNS moves also in worsening zones if the lead to search trajectory sufficiently far from current point (I need also distance function to control diversification and a parameter to regulate tradeoff movement distance/acceptance worse moves.
+
+\begin{figure}[H]
+\includegraphics[scale=0.50]{vns}
+\caption{VND and skewed version}
+\centering
+\end{figure}
 
  
 \end{document}
