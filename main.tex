@@ -406,7 +406,7 @@ Reduced VNS generate a random neighbor before moving or not, so in the selection
 \centering
 \end{figure}
 
-Skewed VNS moves also in worsening zones if the lead to search trajectory sufficiently far from current point (I need also distance function to control diversification and a parameter to regulate tradeoff movement distance/acceptance worse moves.
+Skewed VNS moves also in worsening zones if the lead to search trajectory sufficiently far from current point (I need also distance function to control diversification and a parameter to regulate tradeoff movement distance/acceptance worse moves).
 
 \begin{figure}[H]
 \includegraphics[scale=0.50]{vns}
@@ -437,7 +437,52 @@ Picture \ref{fig:ils} shows how IteratedLocalSearch works.
 \centering
 \label{fig:ils}
 \end{figure}
- 
+
+\section{Adaptive Random Search}
+This methods apply when partial or complete derivates are not available. Adaptive Random Search is based only on the knowledge of the visited points. The base version works as follow:
+\begin{itemize}
+\item{1. Choose initial point and initial search region;}
+\item{2. Generate new candidate point $x_+$ with a certain probability distribution on the search region;}
+\item{3. Search region is expanded if $f(x_+) < f(x_c)$, otherwise is compressed ($x_c$ previous point);}
+\item{4. If $f(x_+) < f(x_c)$ then $x_+$ is new current point and search region is moved around it;}
+\end{itemize}
+For effective implementations, simple search region around the current point suffice. An example is using boxes: 
+$$
+\delta = \sum_{j} Rand(-1,1) * b_j
+$$
+ with $b_j$ as base vector. Note that this search region is not a sphere but a hyper-rectangle.
+
+\subsection{RAS: adaptation of the sampling region}
+RAS stands for Reactive affine shaker is a method to modify the search region in an online manner. RAS use an affine transformation to 
+create the new search region. An affine transformation is the composition of a linear one followed by a translation (e.g. rotation, scaling, shifting, shear, ...) :
+$$
+x \rightarrow Ax + b
+$$
+An affine transformation has the following good properties:
+\begin{itemize}
+\item{Points which lie on a line continue to be collinear after the transformation}
+\item{Ratios of distances along a line are preserved}
+\end{itemize}
+
+This algorithm tries to minimize the number of steps needed to reach the local minima. By compressing the search region only if next point is worse, this algorithm tries to do always the largest possible movement. A pseudocode example is shown in picture \ref{fig:ras}. $\Delta$ is a vector generated with a uniform probability distribution over the search region. The algorithm uses a double-shot strategy: if adding $\Delta$ does not lead to a better point, it will try to go in the opposite direction. Using a double-shot strategy heavy reduce the probability of generating sequences of unsuccessful events. At each iteration a matrix P is computer and each base vector $b_j$ is updated.
+If the function found a new better point, P will increase the length of base vectors, otherwise it will compress the search region. $\rho > 1$ is the expansion ratio. 
+
+\subsection{Repetitions for robustness and diversification}
+
+In general, estimate the number of steps required for identifying a global minimum is impossible. RAS can be stopped for example when search region become smaller that a certain threshold. To be more robust, one can launch different instances of RAS starting from different random points, creating a sort of population of independent RAS searchers. More complex methods to coordinate them are showed in Chap 15.
+
+\begin{figure}[H]
+\includegraphics[scale=0.25]{ras}
+\caption{Reactive Affine Shaker}
+\centering
+\label{fig:ras}
+\end{figure}
+
+
+
+
+
+
 \end{document}
 
 
