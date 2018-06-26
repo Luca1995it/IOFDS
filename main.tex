@@ -324,9 +324,7 @@ $$
 \min_{x} f(x) + \sum_{i} \lambda_{i} g_{i}(x)
 $$ 
 
-Minimizing the transformed function yields a necessary condition for optimality. Additional checks are therefore necessary (for example, the identified point can be a saddle point and not a global minimum), but in many cases, in the presence of a single global optimum, the method of Lagrange multipliers will deliver the correct solution.
-
-
+Minimizing the transformed function yields a necessary condition for optimality. Additional checks are therefore necessary (for example, the identified point can be a saddle point and not a global minimum), but in many cases, in the presence of a single global optimum, the method of Lagrange multipliers will deliver the correct solution. 
 
 \section{Reactive Search Optimization (RSO): Online Learning methods}
 
@@ -439,6 +437,122 @@ Picture \ref{fig:ils} shows how IteratedLocalSearch works.
 \label{fig:ils}
 \end{figure}
 
+\section{Online learning in SA}
+A good thing in SA is the asymptotic convergence: if num of iterations is infinite and the temperature (T) parameter decreases slowly (cooling phase) the probab of find global opt is 1. Drawback is that if T is too small wrt the step of \textit{f} necessary to escape from the attraction basin, I keep on cycle around the attractor. This happens because SA has no memory of past local search. 
+
+\begin{figure}[H]
+\includegraphics[scale=0.40]{sa}
+\caption{SA: T is too low wrt jump size so many iterations spent in the valley :( }
+\centering
+\end{figure}
+
+If I add online learning I can improve SA. I can estimate progress, entrapment region and then activate ways to escape from these situations, like increasing the T parameter.
+
+\subsection{combinatorial opt problems}
+In traditional SA I have 3 parameters: $ T_{start}, T_{end}, T_{t+1} = \alpha * T_t $. So, I have to choose the T parameters and the $ \alpha $, but the scale of T may be wrong, leading to poor results. It is suggested to estimate the \textit{f} values distribution in order to understand at which value fix the $ T_{start}, \text{ and the } T_{end} $ parameters: $ T_{start} = \sigma^2 f $ and $ T_{end} = \text{ min } f \text{ variations} $
+
+Great T values correspond to wide variations of \textit{f}, also called reconfigurations. In physic world it is called phase transition. I reach this situation when the specific heat is max. After big reconfigurations there is a cooling phase (T is decreased), using two parameters: $ \alpha $ for fast decreasing and $ \beta $ for slower decreasing. one switches from a faster temperature decrease given by $ \alpha $ to the slower one given by $ \beta $.
+After the initial period the temperature is very low: the system freezes, so no tentative moves are accepted. In many case I need an anytime algorithm sot that longer allocated CPU times allow to reach better values until user decides to stop. They return the best answer possible even if they do not run to completion, and they may improve on the result if they are allowed to run longer. Stopping criterion should be decided a posteriori, after estimating additional time cannot reach better results. 
+
+This problem is related to monotonic decrease, so I should fix the reset T to a constant T, high enough to escape the local min but also low to visit them. I can fix it to the T that I found when the best heuristic sol is found in a preliminary SA run. 
+
+This is non-monotonic cooling:
+
+\begin{itemize}
+\item exploit an attraction basin rapidly
+by decreasing the T so that the system get close to the local minimizer
+\item increasing the
+T to diversify the sol and visit other attraction basins
+\item decreasing again after reaching a different
+basin
+\end{itemize}
+
+The T increases in this kind of non-monotonic cooling schedule has to be rapid enough to avoid falling back to the current local min, but not too rapid to avoid a random-walk situation (where all random moves are accepted).
+
+Possibilities to increase the temperature include resetting the temperature to $ T_{reset} = T_{found} $, the T value when the current best solution was found. 
+In the cooling phase, if the reset is succesful I can reduce the reset T by halving it.
+Alternatively I can multiply T by a heating factor $ \gamma > 1 $. $ \gamma $ should be choose with learning process: it should be near to 1 in the first phase, if the system is trapped, it has to be increased to escape from the basin.
+
+Experimental evidence shows that the a priori determination of SA parameters and acceptance function does not
+lead to efficient implementations. A simple adaptive technique is the SEQUENCE HEURISTIC: a perturbation leading to a worsening solution is accepted if and only if a fixed number of trials could not find an improving perturbation.
+
+\subsection{SA for global opt of continuous functions}
+I can apply SA to continuous opt. 
+
+\begin{itemize}
+\item generate a new point with a random step along a direction $ \textbf{e}_h $
+\item evaluate the function
+\item accept the worsening move with a certain probability
+\end{itemize}
+
+First choice is the length of the random step along $ \textbf{e}_h $, I  have to learn from the local \textit{f} surface, so the new trial point $ \textbf{x'} = \textbf{x} + Rand(-1,1)v_h \textbf{e}_h $, where $ Rand(-1, 1) $ returns a random number uniformly distributed between -1 and 1,  $ \textbf{e}_h $ is the unit-length vector along direction h, and $ v_h $ is the step-range parameter, one for each dimension h, collected into the vector \textbf{v}.
+
+In Adaptive Simulated Annealing (ASA) the parameters that control the temperature cooling schedule and the random step selection are automatically adjusted according to algorithm progress.
+
+\section{Dynamic search and noise level}
+A strategy to search for global opt can be modify in a reactive way the function \textit{f}, in order to make local good areas to appear less feasible. For example, I can increase the value of the function in an area of local min, in order to encourage the local search procedure to discard keeping on searchin in that zone. 
+
+GSAT is an algorithm for satisfiability of boolean formulas that uses multiple runs of local serach. At each iteration, the bit which gives the max current number of clauses is flipped, in order to find other different configurations of variable which allow to reach better results. 
+
+\begin{itemize}
+\item I have a number of tentatives
+\item for each tentative I can run a number of iterations
+\item for each iteration a variable is chosen, using 2 different criteria: the variable in an unsatisfied clause or the variable which allow to reach the max number of satisfied clauses. 
+\item the chosen var is flipped
+\item I need to save the truth assignment with give the max number of sat clauses
+\end{itemize}
+
+To avoid stopping at local optimum I can give clauses a different weight, for example I can give more weight to clauses to hide local optima. This techinque is reactive because current weights depends on the local characteristics. 
+
+An alternative is to learn from the most difficult sat clauses. The most difficult clauses to be satisfied are those which remain unsat after many trials. So, I can increas their weight to increase their priority in the local search phase. Whend picking a move, they will be considered more than the other clauses. 
+
+Now I have a problem, because I can continue increase some clause weights, obtaining that their size is too big wrt to others. A strategy can be lowering their weight once they become sat, or having a decayment factor which has to reduce their weight. 
+
+With these techiniques I applied global changes, this can be a problem because it can affect also further points with similar values in the search space.
+
+I can use two parameters, one for sat clauses and one for unsat clauses and then smooth them using the mean. (Scaling And Proab Smoothing).
+
+\subsection{guided local search}
+A similar approach is proposed for other applications and the aim is to guide a local search algorithm in the search space. 
+This is the scheme proposed
+
+\begin{itemize}
+\item features penalties
+\item costs of features (known a priori, as cost edges in TSP)
+\item NH activation scheme depending on the current state 
+\end{itemize}
+
+So I can use an augmented cost function $ h(X) $ defined as:
+
+\begin{figure}[H]
+\includegraphics[scale=0.50]{augmented}
+\centering
+\end{figure}
+
+where $ I_i(X) $ is an indicator function which returns 1 if feature  \textit{i} is present in X, 0 otherwise.The augmented cost
+function is used by local search instead of the original function.
+	
+Penalties are initially set to 0, they are updated lately. $ \lambda $ and penalties are adapted in online manner. 
+
+When a local minimum of h is encountered the augmented cost function is modified by updating the penalties $ p_i $ . One considers all features $ f_i $ present in the local min solution X' and increments by one the penalties which maximize:
+
+\begin{figure}[H]
+\includegraphics[scale=0.50]{penalties}
+\centering
+\end{figure}
+
+First a higher cost $ c_i $ , and therefore an inferior a priori desirability for feature $ f_i $ in the solution, implies a higher tendency to be penalized.
+Second, the penalty $ p_i $, which is also a counter of how many times a feature has been penalized, appears at the denominator, and therefore discourages penalizing features which have been penalized many times in the past.
+
+I can combine GLS with Fast LS, partitioning the neighborhoods in sub areas, which can be activate or disactivated according to the search process. If a NH does not contain improving moves, it is disactivated, if some improving moves can be found inside a NH, this is activated and used in the search process. 
+
+A difficult thing in GLS which has to be managed is the diversification of unit measures. Moreover, penalties can modify the fuction too much, avoiding to find some local interesting min, skipping some solutions.
+
+\subsection{adapting noise levels}
+I can add some random noise to moves, in order to influence diversification. So, I can use a noise parameter to determine a random variable which has to be flipped in GSAT. This parameter can be set a priori, after some preliminary trials or adapted online. 
+
+I always have to search a compromise between intensification of search and diversification, and this noise parameter allow me to add a controlled randomization on moves.
+
 \section{Adaptive Random Search}
 This methods apply when partial or complete derivates are not available. Adaptive Random Search is based only on the knowledge of the visited points. The base version works as follow:
 \begin{itemize}
@@ -479,7 +593,195 @@ If the function found a new better point, P will increase the length of base vec
 
 In general, estimate the number of steps required for identifying a global minimum is impossible. RAS can be stopped for example when search region become smaller that a certain threshold. To be more robust, one can launch different instances of RAS starting from different random points, creating a sort of population of independent RAS searchers. More complex methods to coordinate them are showed in Chap 15.
 
+\section{Linear and quadratic programming}
 
+In LP I have a linear objective funtions subject to linear constraints, and I have to found input values which can maximize this function respecting also the constraints. 
+
+Integer LP is a version of LP with the additional requirement that input values must be integers. 
+
+Quadratic Programming can be used to solve efficiently problems with quadratic objective functions and linear constraints.
+
+\subsection{Linear programming (LP)}
+I have to optimize the linear obj functions so that linear inequality/equality constraints are satisfied. 
+
+If x is one-dimensional, a linear function is a straight line, constraints are inequalities like $ a \leq x $ or $ x \leq b $. If there are values of x satisfying the inequalities, and the slope of the line is different from 0, an optimal solution will be one of the boundary values (a or b). 
+
+Attention: constraints like a < x are not acceptable (imagine f(a) is the minimum value). In fact, given a point close to a, we could always find a smaller x value with a smaller f value: one needs compact sets, closed (containing all its limit points) and bounded.
+
+Linear programming is a technique for the optimization of a linear
+objective function, subject to linear equality and linear inequality constraints. LP can be expressed in canonical form
+as
+
+\begin{figure}[H]
+\includegraphics[scale=0.50]{lp}
+\centering
+\end{figure}
+
+The inequalities $ Ax \leq b $ and $ x \leq 0 $ are the constraints which specify a geometrical figure known as convex polytope over which the objective function has to be optimized.
+Each constraint, (the scalar product between a row of matrix and the vector of variables: $ A_i * x \leq b_i $) , defines a half-space of points satisfying it. Because all constraints have to be satisfied, the intersection of the half-spaces (when bounded and non-empty) defines the convex polytope. Convexity is important.
+
+Polytope contains an infinite number of points, so brute-force algorithms are impossible.
+
+An optimal solution can always be found at a vertex. For a demonstration, convexity and linearity are the keys.
+
+The feasible region is convex and the objective function is linear, so, a local optimum is a global optimum. 
+
+Demonstration:
+ 
+If the above does not hold, there will be a point $ x_loc $ which is locally optimal but with a global optimum point $ \textbf{x}_opt = \textbf{x}_loc $ of higher objective value. If one considers the line segment connecting the two points, because of convexity belonging to the feasible region, the objective along this segment will increase. In particular, it will increase also for points along the segment in all local balls surrounding the local opt, a contradiction with the fact that is is locally opt.
+
+In addition, a global optimum can always be found among the vertices.
+
+Proof: 
+Assume that a local optimum $ x_opt $ is in the interior of the LP polytope. If the gradient of the linear objective function is non-zero, one can move away from the local opt along the line $ \textbf{x}_opt + t*\textbf{c} (t \leq 0) $ and obtain higher objective values, until a point on the boundary is met. If the point on the boundary is not a vertex, one considers the vectors spanning the facet or edge. Either the gradient is perpendicular (in which case moving along the faces will not change the objective), or its projection defines a direction to follow to get even higher objective values. 
+
+In all cases one can safely move (getting higher or equal objective values) until a vertex is reached.
+
+By the above conclusions that local opt is sufficient one derives the \textbf{simplex algorithm} for LP:
+
+\begin{itemize}
+\item It starts at some vertex. If the problem is solvable (the feasible region is not empty), an initial vertex can be determined by applying the simplex algorithm to a modified and easily solvable version of the original program. 
+\item A sequence of local search (LS) steps are executed, in which the possible neighbors of the current vertex are the vertices that can be reached by moving along an edge. LS always moves to an improving local vertex (one with higher obj value).
+\item Simplex terminates when it reaches a local max, a vertex from which all neighboring vertices have a smaller objective value. Because of convexity of feasible region and linearity of objective function, this is actually a global opt.
+\end{itemize}
+
+Convergence? this simple version has to be cured to avoid possible cycles (case of neighboring vertices with equal objective values). 
+
+Complexity? The existence of solutions algorithms for LP with guaranteed polynomial complexity has been an open problem in computer science for many years. The LP problem was first shown to be solvable in polynomial time by in 1979.
+
+\subsubsection{algebraic view of linear programming}
+A first observation is that the boundaries of the polytope corresponds to some inequalities in the constraints becoming equality. 
+
+Dealing with equalities only is simpler than dealing with inequalities. Luckily, one can transform an LP problem into the slack form:
+
+\begin{figure}[H]
+\includegraphics[scale=0.60]{alp}
+\centering
+\end{figure}
+
+by a simple trick of adding additional slack variables. For each constraint:
+
+\begin{figure}[H]
+\includegraphics[scale=0.60]{slack}
+\centering
+\end{figure}
+
+one introduces a new variable s and rewrites the above inequality as the two contraints:
+
+\begin{figure}[H]
+\includegraphics[scale=0.60]{ineq}
+\centering
+\end{figure}
+
+\subsection{Integer Linear Programming} 
+An Integer Linear Programming problem (ILP) is an LP problem with the additional constraints that the variables \textbf{x} must take on integral values. ILP is NP-hard. The feasible region is not a nice  polytope anymore but a set of dots corresponding to integer (feasible)
+coordinates. So it's impossible to move from vertex to vertex continuously.
+
+A heuristic way to proceed is to simply remove the constraint that \textbf{x} is integral, and solve the corresponding LP (called the LP relaxation of the ILP). The optimal LP value is an upper bound (when one relaxes to real values, and therefore has more possibilities to improve a solution). One can then round the entries of the solution to the LP relaxation to the nearest integers. Of course, a solution obtained
+by rounding may not be optimal, it may not even be feasible (it may violate some constraint). ILP problems can be solved with heuristic local search techniques.
+
+\subsection{quadratic programming}
+The problem of optimizing a quadratic function of several variables subject to linear constraints on these variables. An example is Support Vector Machines.
+For positive-definite Q, the ellipsoid method solves the problem in polynomial time. But if Q is indefinite, the problem
+becomes NP-hard.
+
+\begin{figure}[H]
+\includegraphics[scale=0.60]{qp}
+\centering
+\end{figure}
+
+\section{Branch and Bound and Dynamic Programming}
+The most relevant algorithmic patterns in addition to greedy and local search are Branch and Bound and Dynamic Programming.
+
+Branch and bound is a little better than the exhaustive enumeration of all possible solutions.
+
+Dynamic Programming is based on decomposing a problem, finding solutions to smaller instances, and re-using them to build solutions to larger and large instances, in a bottom-up manner. Because smaller instances are found many times, it makes sense to store their solutions in an organized memory structure.
+
+\subsection{Branch and Bound}
+If one needs to find a best configuration out of a finite set, a brute-force algorithm is exhaustive search: generate all possible configuration and evaluate the corresponding objective-function values.
+
+If a configuration corresponds to picking specific values for a set of variables, the entire set of configurations can be organized as a solution tree: the root is the starting situation.
+Complete solutions correspond to the leaves of the tree, while internal nodes are partial solutions. Exhaustive search then is implemented by generating the entire tree and examining its leaves.
+ 
+The number of leaves can grow exponentially. To save CPU time I can delete parts of the trees that cannot lead to any improvement (pruning). I can demonstrate that some partial solutions have no hope of becoming optimal when completed.
+
+An algorithm design paradigm is to associate nodes with sets of solutions, the complete slutions which can be obtained by fixing the remaining free variables in all possible ways. The full set of candidate solutions is at the root. The algorithm explores branches of this tree, which represent subsets of the solution set. 
+
+Branching means assigning a value to a variable in a partial solution and finding, in a recursive manner, the best value in the corresponding subtree. 
+
+Before enumerating the candidate solutions of a branch, the branch is checked against an optimistic bound on the optimal solution, and
+is discarded if it cannot produce a better solution than the current record value (the best value found so far by the algorithm).
+
+The advantage w.r.t. exhaustive search depends on the existence, quality and speed of computation of the optimistic bound used for pruning. If the bound is tight, a big fraction of the search space can be cut.
+
+Branch-and-bound aims at minimizing the value of a real-valued function $ f(x) $, in which $ x \in S $, the set of admissible, or candidate solutions, (search space).
+
+The alg works as follow:
+
+\begin{itemize}
+\item It recursively splits the search space into smaller spaces (branching), then minimizing $ f(x) $ on these smaller spaces.
+\item It keeps track of an optimistic bound on the minimum value which can be reached by completing a given partial solution in all possible ways. If the bound is larger than the current record value, the current subtree is pruned, and control is returned to the first encountered higher level in the tree which has alternative ways to fix variables
+not yet explored (backtracking).
+\end{itemize}
+
+Branch And Bound is unusable for most real-world problem due to its CPU time requirements: nodes explode exponentially as the problem size increases.
+
+\subsection{Dynamic Programming}
+The principle is solving problems by combining solutions to subproblems, with the specific characteristic that the subproblems are not independent, but problems share subproblems. DP solves each subproblem only once and then saves its result in a table, avoiding useless re-computation.
+
+\begin{itemize}
+\item Study and characterize the structure of an optimal solution (how it contains solutions to smaller instances)
+\item Define the value of an optimal solution in a recursive manner from the values of solutions of subproblems.
+\item Compute the value of the optimal solution in a bottom-up manner (by starting from the smallest subproblems)
+\item Construct an optimal solution from information computed while finding the value
+\end{itemize}
+
+Dynamic Programming is the base of Viterbi's algorithm. To help the intuition, let’s consider a simplified problem of text recognition.
+The probability of recognizing a character at a certain position depends on the underlying sequence, and on the context given by additional characters around it. 
+We have simple models able to calculate probabilities of complete sequences. The principle is searching for the most probable sequence given the observed signals and given a model of sequence generation.
+
+Very useful and used models of sequences generated by an underlying hidden process are \textbf{hidden Markov model (HMM)}.
+
+The intention is to model a system with a hidden state (not directly measurable) which produces one among a set of output signals (or symbols), with a probability for each symbol. 
+>>>>>>> e324923d968febe58837913805af536d9cf9bb7a
+
+Mathematically the hidden Markov model is characterized by 
+\begin{itemize}
+\item a state space S
+\item initial probabilities $ \pi_i $  of being in state \textit{i}
+\item transition probabilities $ a_{i,j} $ from state \textit{i} to state \textit{j}
+\item $ b_{i,o} $ emission probab that stat \textit{i} emits observation \textit{o}
+\end{itemize}
+
+we observe outputs $ y_1, ..., y_T $.
+
+$ V_{t,k} $ is the probab of the most probab state sequence ending at time \textit{t} at state k.
+
+So, assume that $ (s1, ... s{t}, k) $ is the optimal sequence ending in state k at time \textit{t}, and we need to consider the sequence at the iteration before.
+
+Now, consider the most proable sequences stopping at iteration before, \textit{t-1}. $ V_{t-1, x} $ is the probab of the most probable path at the previous step in state x. 
+
+Two events must happen to reach k, a transition from x to k and the emission of the measured signal $ y_t $.
+
+Because we are searching for the most probable sequence, we must maximize the probability over all possible previous points x.
+
+So the most likely sequence $ x_1, ... x_T $ is given by
+
+\begin{figure}[H]
+\includegraphics[scale=0.60]{V}
+\centering
+\end{figure}
+
+the Viterbi path can be retrieved by saving back pointers that remember which state x was the winning one in the second equation.
+
+$ Ptr(k,t) $ returns the value of x used to compute $ V_{t,k} $ if t > 1, or k if t = 1. Then:
+
+\begin{figure}[H]
+\includegraphics[scale=0.60]{x}
+\centering
+\end{figure}
+
+The complexity of this alg is $ O(T \text{ X } |S|^2) $, while a complexity of a brute-force scheme considering all possible paths is $ O(|S|^T) $.
 
 
 \section{Satisfiability}
@@ -502,6 +804,7 @@ Truth values to variables are assigned by placing a black triangle to the left i
 \centering
 \label{fig:bool}
 \end{figure}
+
 
 \subsection{Resolution and Linear Programming}
 \subsubsection{Resolution and backtracking for SAT}
@@ -648,8 +951,6 @@ How to benchmark our SAT solver or our MAX-SAT solver? There is the need to gene
 \item{k-SAT modes, also called fixed length clause mode. A randomly generated CNF formula consists of independently generated random clauses, where each clause contains exactly $k$ literals. Each literal is chosen uniformly from $U = \{u_1 , ..., u_n \}$, and negated with probability $p$. The default value for $p$ is 1/2.}
 \item{average k-SAT model, also called random clause model. A randomly generated CNF formula consists of independently generated random clauses. Each literal has ha probability $p$ of being part of a clause. In detail, each of the n variables occurs positively with probability $p(1 -p)$, negatively with probability $p(1 - p)$, both positively and negatively with probability $p^2$, and is absent with probability $(1 - p)^2.$}
 \end{itemize}
-
-
 
 
 \end{document}
