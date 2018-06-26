@@ -1,4 +1,4 @@
-\documentclass[11pt]{article}
+\documentclass[10pt]{article}
 \usepackage[utf8]{inputenc}
 
 \usepackage{geometry}
@@ -17,12 +17,13 @@
 \usepackage{amsmath,amssymb}
 \DeclareMathOperator{\improving}{IMPROVING-NEIGHBOR}
 \DeclareMathOperator{\neighbor}{NEIGHBOR}
+\DeclareMathOperator{\bestneighbor}{BEST-NEIGHBOR}
 \DeclareMathOperator*{\argmax}{arg\,max}
 \DeclareMathOperator*{\argmin}{arg\,min}
 \DeclareMathOperator{\E}{\mathbb{E}}
  
 \title{IOFDS Zusammenfassung}
-\author{Luchello Di Liello \& Marty \thanks{Thanks to Rick and Morty}}
+\author{Luca \& Marty \thanks{Thanks to Rick and Morty}}
 \date{June 2018}
  
 \begin{document}
@@ -467,10 +468,6 @@ An affine transformation has the following good properties:
 This algorithm tries to minimize the number of steps needed to reach the local minima. By compressing the search region only if next point is worse, this algorithm tries to do always the largest possible movement. A pseudocode example is shown in picture \ref{fig:ras}. $\Delta$ is a vector generated with a uniform probability distribution over the search region. The algorithm uses a double-shot strategy: if adding $\Delta$ does not lead to a better point, it will try to go in the opposite direction. Using a double-shot strategy heavy reduce the probability of generating sequences of unsuccessful events. At each iteration a matrix P is computer and each base vector $b_j$ is updated.
 If the function found a new better point, P will increase the length of base vectors, otherwise it will compress the search region. $\rho > 1$ is the expansion ratio. 
 
-\subsection{Repetitions for robustness and diversification}
-
-In general, estimate the number of steps required for identifying a global minimum is impossible. RAS can be stopped for example when search region become smaller that a certain threshold. To be more robust, one can launch different instances of RAS starting from different random points, creating a sort of population of independent RAS searchers. More complex methods to coordinate them are showed in Chap 15.
-
 \begin{figure}[H]
 \includegraphics[scale=0.25]{ras}
 \caption{Reactive Affine Shaker}
@@ -478,7 +475,179 @@ In general, estimate the number of steps required for identifying a global minim
 \label{fig:ras}
 \end{figure}
 
+\subsection{Repetitions for robustness and diversification}
 
+In general, estimate the number of steps required for identifying a global minimum is impossible. RAS can be stopped for example when search region become smaller that a certain threshold. To be more robust, one can launch different instances of RAS starting from different random points, creating a sort of population of independent RAS searchers. More complex methods to coordinate them are showed in Chap 15.
+
+
+
+
+\section{Satisfiability}
+The satisfiability problem is one of the most important in computer science. It's a well known NP-Complete problem and consists in finding an assignment to all the variables of the boolean formula such that the whole formula is True. This problems are really simple to be understood and really difficult to be solved.
+
+\subsection{Satisfiability and maximum satisfiability: definitions}
+One is given a boolean formula in CNF, a conjunction of clauses. The problem consists in finding an assignment that satisfies the max number of clauses. If a formula has $n$ variables and $m$ clauses, it can be written as:
+$$
+\bigwedge\limits_{1 \leq i \leq m} ( \bigvee\limits_{1 \leq k \leq |C_{i}|} l_{ik})
+$$
+The set of clauses is called $\boldsymbol{C}$. If one assigns a weight $w_i$ to each clause, the problem because MAX W-SAT. If each clause contains a fixed number k of literals, the problem becomes MAX-k-SAT.
+
+\subsubsection{Notation and graphical representation}
+MAX-SAT is easy to define and excellent to visualize. Given a formula $ (u_1 \lor \lnot u_3 \lor u_5) \land (\lnot u_2 \lor \lnot u_4 \lor \lnot u_5 ) \land ( \lnot u_1 \lor u_3 \lor \lnot u_4 )$ the respective table is showed in Picture \ref{fig:bool}.
+Truth values to variables are assigned by placing a black triangle to the left if the variable is true, to the right if it is false. Each literal is depicted with a small circle, placed to the left if the corresponding variable is true, to the right in the other case. If a literal is matched by the current assignment (e.g., if the literal asks for a true value and the variable is set to true, or if is asks for false and the variable is false), it is shown with a gray shade. The coverage of a clause is the number of literals in the clause that are matched by the current assignment, and it is illustrated by placing a black square in the appropriate position of an array with indices ranging from 0 to the number of literals in each clause $|C|$.
+
+\begin{figure}[H]
+\includegraphics[scale=0.5]{bool}
+\caption{Table of a boolean formula}
+\centering
+\label{fig:bool}
+\end{figure}
+
+\subsection{Resolution and Linear Programming}
+\subsubsection{Resolution and backtracking for SAT}
+Inspired by Branch and Bound adapting it to the structure of SAT. A basic tool we will need is that of resolution, given by the recursive replacement of a formula by one or more formulae, the solution of which implies the solution of the original formula. In resolution a variable is selected and a new clause, called the resolvent is added to the original formula. The process is repeated to exhaustion or until an empty clause is generated. The original formula is not satisfiable if and only if an empty clause is generated. 
+
+A clause R is the resolvent of clauses $C_1$ and $C_2$ iff there is a literal $l \in C_1$ with $\lnot l \in C_2$ such that $R = (C_1 \setminus \{l\}) \cup (C_2 \setminus \{l\})$ and $u(l)$, the variable associated to the literal, is the only variable appearing both positively and negatively. For the two clauses $C1 = (l \lor a_1 \lor ... \lor a_A)$ and $C2 = (\lnot l \lor b_1 \lor ... \lor b_B)$ the resolvent is therefore the clause $R = (a_1 \lor ... \lor a_A \lor b_1 \lor ... \lor b_B )$. Is we add the resolvent as a new clause, the solution does not change, because if both $C_1$ and $C_2$ are satisfied, they have at least one literal in common that will solve the resolvent. If there is not common literal between $C_1$ and $C_2$, then they contain only $l$ and $\lnot l$ and so are not both satisfiable. Picture \ref{fig:resolvent} shows how to construct a resolvent.
+
+\begin{figure}[H]
+\includegraphics[scale=0.5]{resolvent}
+\caption{How to construct a resolvent}
+\centering
+\label{fig:resolvent}
+\end{figure}
+
+One of the best SAT solvers is the DPLL algorithm. It's pseudocode is showed in Picture \ref{fig:dpll}.
+
+\begin{figure}[H]
+\includegraphics[scale=0.5]{dpll}
+\caption{DPLL algorithm}
+\centering
+\label{fig:dpll}
+\end{figure}
+
+with as input a set of clauses $\boldsymbol{C}$. Remember that:
+\begin{itemize}
+\item{Pure literal: If a propositional variable occurs with only one polarity in the formula, it is called pure. Pure literals can always be assigned in a way that makes all clauses containing them true. Thus, these clauses do not constrain the search anymore and can be deleted.}
+\item{Unit clause: If a clause is a unit clause, i.e. it contains only a single unassigned literal, this clause can only be satisfied by assigning the necessary value to make this literal true. Thus, no choice is necessary. In practice, this often leads to deterministic cascades of units, thus avoiding a large part of the naive search space.}
+\item{$\boldsymbol{C}(l)$ means replacing the LITERAL $l$ with True in all clauses. If the literal is a negated variable, then it will be replaced with False.}
+\end{itemize}
+
+Unfortunately, in the worst case, this algorithm will require an exponential number of steps to find out if the formula is satisfiable. 
+
+\subsubsection{Integer programming approaches}
+The MAX W-SAT problem has a natural integer linear programming formulation. Let $y_j = 1$ if boolean var $u_j$ is true otherwise $0$. Let $z_i = 1$ if clause $C_i$ is satisfied else $0$. The integer linear programming problem is:
+$$
+\max \sum_{i=1}^{m} w_i z_i
+$$
+subject to the following constraints (it says that each clause should have at least a true assignment to a literal):
+$$
+\sum_{j \in U_i^{+}} y_j + \sum_{j \in U_i^{-}} (1 - y_j) \geq z_i , \ \ i = 1,...,m
+$$
+with $U_i^{+}$ and $U_i^{-}$ as the sets of positive and negative variables in clause $C_i$. With this formulation, a simple Branch and Bound method should be able to solve the problem and maximize it. Like in DPLL, from the root two branches are generated, one with a true assignment to a chosen variable and the other with a false assignment (last two lines of the algorithm).
+
+\subsection{Continuous approaches}
+Other methods to solve ILP is to solve a related problem of inductive inference, in which one aims at identifying a hidden boolean function using outputs obtained by applying a limited number of random inputs to the hidden function. The task is formulated as a SAT problem, which is in turn formulated as an ILP:
+$$
+A^T y \leq c, \ \ y \in \{-1,1\}^n
+$$
+where $A^T$ is an $m \times n$ real matrix and $c$ a real vector of length $m$. The so called interior point is based on finding the local minimum in the box $-1 \leq y_j \leq 1$ of a potential function $\phi(y)$. If there is a solution, it will be the solution of the ILP problem too.
+
+\subsection{Approximation algorithms}
+MAX-SAT is a playground for algorithms with guaranteed quality of approximation. The basic principle is to guarantee that the delivered result will be within a certain percentage of the optimal solution. The first approximate algorithm for MAX W-SAT were proposed by Johnson and is showed in Picture \ref{fig:johnson}.
+
+\begin{figure}[H]
+\includegraphics[scale=0.5]{johnson}
+\caption{Johnson algorithm}
+\centering
+\label{fig:johnson}
+\end{figure}
+
+The Johnson algorithm can be showed to be $\frac{k}{k+1}$-approximate for MAX-SAT. An improved version, that is Johnson2, remembering that $k$ is the minimum number of literals in a clause. Picture \ref{fig:johnson2} shows the second version, that is $(1 - \frac{1}{2^k})$-approximate algorithm. 
+
+\subsubsection{Randomized algorithms for MAX W-SAT}
+A randomized $\frac{1}{2}$-approximate algorithm for MAX W-SAT. One of the most interesting approaches in the design of new algorithms is the use of randomization. During the computation, random bits are generated and used to influence the algorithm process. First see the algorithm \textit{RANDOM} in Picture \ref{fig:randomsat}.
+
+\begin{figure}[H]
+\includegraphics[scale=0.3]{randomsat}
+\caption{The Random algorithm}
+\centering
+\label{fig:randomsat}
+\end{figure}
+
+The \textit{RANDOM} algorithm is $(1 - \frac{1}{2^k})$-approximate, and with a $k$ that can potentially be 1, we say it is $\frac{1}{2}$-approximate. It is easy to proof that if a clause has k literals, satisfiying at least one of them has probability  $(1 - \frac{1}{2^k})$.  An improved version, that differers only in the probability of setting variables to true, is shown in Picture \ref{fig:genrandom}.
+
+\begin{figure}[H]
+\includegraphics[scale=0.3]{genrandom}
+\caption{The GenRandom algorithm}
+\centering
+\label{fig:genrandom}
+\end{figure}
+
+\textit{GenRandom} can be shown to be $\frac{3}{4}$-approximate for MAX W-SAT.
+
+\subsection{Local Search for SAT}
+MAX-SAT is among the problems for which perturbative local search is very effective: the general base scheme is based on generating a starting point in the set of admissible solution and trying to improve it through the application of simple basic moves. If a move is successful, current point is moved to the new location, otherwise on keeps the current point. Of course the successfulness of a local search technique depends on the neighbourhood chosen. In MAX-SAT, the input space will be the one given by all possible truth assignment and representing it as a binary string. The output will be the number of satisfied clauses. Formally, let $\Omega$ be the discrete search space: $\Omega = \{0,1\}^n$, and let $f:\Omega \rightarrow  {\rm I\!R}$ the function to be maximized. Then let $U^{(t)} \in \Omega$ be the current configuration along the search trajectory at step $t$ and $N(U^{(t)}) \subseteq \Omega$ the heighbourhood obtained applying a set of basic moves $\mu_i \ (1 \leq i \leq n)$ where $\mu_i$ complements the \textit{i}-th bit of the string: $\mu_i (u_1, u_2, ... , u_i, ... ,u_n) = (u_1, u_2, ..., \lnot u_i, ..., u_n)$.
+$$
+N(U^{(t)}) = \{U \in \Omega \text{ such that } U = \mu_i(U^{(t)}), \ i = 1,...,n\}
+$$
+The version of local search that we consider starts from a random initial configuration $U^{(0)} \in \Omega$ and generated a search trajectory as follows: 
+\begin{itemize}
+\item{1. $V \leftarrow \bestneighbor(N(U^{(t)}))$}
+\item{2. $U^{(t+1)} = \begin{cases} 
+      V & f(V) < f(U^{(t)}) \\
+      U^{(t)} & f(V) \geq f(U^{(t)})
+   \end{cases}
+$}
+\end{itemize}
+Obviously, this algorithm stops when no other improving points can be reached.
+
+An intriguing result by Koutsoupias and Papadimitriou shows that, for the vast majority of satisfiable 3-SAT formulae, the local search heuristic that start at a random truth assignments and repeatedly flips a variable that improves the number of satisfied clauses, almost always succeeds in discovering a satisfying truth assignment.
+
+\subsubsection{Randomized search for 2-SAT (Markov process)}
+While it is well known that 2-SAT is not NP-Complete, the MARKOV-SEARCH algorithm is interesting for its simplicity and its capacity to find a solution in $O(n^2)$ steps. it works as follow:
+\begin{itemize}
+\item{1. Start with a random truth assignment}
+\item{2. While there are unsatisfied clause, pick one of them and flip a random literal in it}
+\end{itemize}
+
+Note that it accepts worsening moves.
+
+\subsection{Memory-less Local Search Heuristics}
+State-of-the-art heuristics for MAX-SAT are obtained by complementing local search with schemes that are capable of producing better approximations beyond the locally optimal points.
+\subsubsection{SA for MAX-SAT}
+The algorithm works like the normal SA, with MAX-TEMP and MIN-TEMP as bounds to the temperature. Figure \ref{fig:sasat} shows how it works.
+
+\begin{figure}[H]
+\includegraphics[scale=0.3]{sasat}
+\caption{The SA for SAT}
+\centering
+\label{fig:sasat}
+\end{figure}
+
+\subsubsection{GSAT with ``random noise'' strategies}
+SAT is of special concern to Artificial Intelligence because of its connection with reasoning. GSAT consists on multiple runs on LS, each run consisting in a number of iterations proportional to the input space dimension. GSAT-WITH-WALK use ``noise'' to escape from attraction basins, balancing random moves with deterministic ones. Picture \ref{fig:gsat} shows how it works:
+
+\begin{figure}[H]
+\includegraphics[scale=0.3]{gsat}
+\caption{GSAT-WITH-WALK algorithm}
+\centering
+\label{fig:gsat}
+\end{figure}
+
+
+\subsection{History-sensitive Heuristics}
+
+Different history-sensitive heuristics have been proposed to continue local search schemes beyond local optimality. These schemes aim at intensifying the search in promising regions and at diversifying the search into uncharted terri- tories by using the information collected from the previous phase (the history) of the search.
+
+\subsubsection{Prohibition-based Search}
+Prohibit some moves for a finite amount of time is a good practice to avoid local search fall in the same attraction basin many times and to avoid the creation of cycles. 
+
+\subsection{Models of hardness and threshold effects}
+How to benchmark our SAT solver or our MAX-SAT solver? There is the need to generate some test cases on which run our algorithms. There are two main models to generate MAX-SAT instances:
+\begin{itemize}
+\item{k-SAT modes, also called fixed length clause mode. A randomly generated CNF formula consists of independently generated random clauses, where each clause contains exactly $k$ literals. Each literal is chosen uniformly from $U = \{u_1 , ..., u_n \}$, and negated with probability $p$. The default value for $p$ is 1/2.}
+\item{average k-SAT model, also called random clause model. A randomly generated CNF formula consists of independently generated random clauses. Each literal has ha probability $p$ of being part of a clause. In detail, each of the n variables occurs positively with probability $p(1 -p)$, negatively with probability $p(1 - p)$, both positively and negatively with probability $p^2$, and is absent with probability $(1 - p)^2.$}
+\end{itemize}
 
 
 
